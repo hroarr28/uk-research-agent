@@ -5,11 +5,20 @@ export {
   toAnthropicMessages,
 } from "./anthropic.js";
 export { runAgent, type RunAgentInput } from "./loop.js";
+export {
+  createOllamaProvider,
+  DEFAULT_OLLAMA_BASE_URL,
+  DEFAULT_OLLAMA_TIMEOUT_MS,
+  interpretOllamaResponse,
+  ollamaBody,
+} from "./ollama.js";
 export { createOpenAiProvider, openAiBody, parseOpenAiResponse } from "./openai.js";
 export { boundToolOutput } from "./output.js";
 export {
   DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_OLLAMA_MODEL,
   DEFAULT_OPENAI_MODEL,
+  isLocalModel,
   estimateCost,
   FALLBACK_PRICE,
   MODEL_PRICES,

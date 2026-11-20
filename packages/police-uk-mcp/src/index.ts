@@ -1,5 +1,6 @@
 export { COVERAGE_NOTE, summariseCrimes, type StreetCrimeSummary } from "./aggregate.js";
 export {
+  callPoliceTool,
   createPoliceClient,
   POLICE_UK_BASE_URL,
   type PoliceClient,

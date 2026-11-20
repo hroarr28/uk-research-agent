@@ -6,4 +6,6 @@ dist/
 !.env.example
 runs/
 evals/results/replay.full.json
+evals/results/*.partial.json
+evals/results/*.tmp
 coverage/

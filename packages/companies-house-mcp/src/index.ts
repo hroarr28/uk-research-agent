@@ -1,4 +1,5 @@
 export {
+  callCompaniesHouseTool,
   createCompaniesHouseClient,
   COMPANIES_HOUSE_BASE_URL,
   type CompaniesHouseClient,

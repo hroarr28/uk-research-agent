@@ -1,4 +1,4 @@
-import { toolError, type ToolResult } from "@uk-research/contract";
+import { toolError, toolJson, type ToolResult } from "@uk-research/contract";
 import { createHttpClient, type FetchLike, type HttpResult, type Logger } from "@uk-research/http";
 import {
   mapFilings,
@@ -10,7 +10,15 @@ import {
   type FilingsData,
   type OfficersData,
 } from "./map.js";
-import type { CompanyNumberArgs, CompanyProfileArgs, SearchCompaniesArgs } from "./schemas.js";
+import {
+  companyNumberArgsSchema,
+  companyProfileSchema,
+  explainInvalidCompaniesHouseArgs,
+  searchCompaniesSchema,
+  type CompanyNumberArgs,
+  type CompanyProfileArgs,
+  type SearchCompaniesArgs,
+} from "./schemas.js";
 
 export const COMPANIES_HOUSE_BASE_URL = "https://api.company-information.service.gov.uk";
 
@@ -87,6 +95,28 @@ export function createCompaniesHouseClient(
       return mapFilings(args.companyNumber, result.data);
     },
   };
+}
+
+export async function callCompaniesHouseTool(
+  client: CompaniesHouseClient,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<string> {
+  const issue = explainInvalidCompaniesHouseArgs(name, args);
+  if (issue) return toolJson(toolError("invalid_input", issue));
+  if (name === "search_companies") {
+    return toolJson(await client.searchCompanies(searchCompaniesSchema.parse(args)));
+  }
+  if (name === "get_company_profile") {
+    return toolJson(await client.getCompanyProfile(companyProfileSchema.parse(args)));
+  }
+  if (name === "get_company_officers") {
+    return toolJson(await client.getCompanyOfficers(companyNumberArgsSchema.parse(args)));
+  }
+  if (name === "get_filing_history") {
+    return toolJson(await client.getFilingHistory(companyNumberArgsSchema.parse(args)));
+  }
+  return toolJson(toolError("unknown_tool", `No tool named ${name}.`));
 }
 
 function asToolError(result: {

@@ -4,27 +4,41 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import {
   createAnthropicProvider,
+  createOllamaProvider,
   createOpenAiProvider,
   DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_OLLAMA_BASE_URL,
+  DEFAULT_OLLAMA_MODEL,
+  DEFAULT_OLLAMA_TIMEOUT_MS,
   DEFAULT_OPENAI_MODEL,
   type ModelProvider,
 } from "@uk-research/agent";
 import {
   liveSmokeTasks,
+  liveToolCatalog,
+  replayCatalog,
   loadGoldenTasks,
   renderMarkdown,
+  resultFileSlug,
   runGoldenReplay,
   runGoldenTask,
   runLiveTasks,
+  runLocalEval,
   stableSummary,
   summarise,
 } from "@uk-research/eval";
+import { createCompaniesHouseClient } from "@uk-research/companies-house-mcp";
+import { createPoliceClient } from "@uk-research/police-uk-mcp";
 import { createTracing, formatTrace, type TraceSpan } from "@uk-research/tracing";
 import { connectLiveCatalog } from "./catalog.js";
 
 const { positionals, values } = parseArgs({
   args: process.argv.slice(2),
-  options: { mode: { type: "string", default: "replay" } },
+  options: {
+    mode: { type: "string", default: "replay" },
+    fresh: { type: "boolean", default: false },
+    tools: { type: "string", default: "recorded" },
+  },
   allowPositionals: true,
 });
 
@@ -34,7 +48,11 @@ process.exitCode = exitCode;
 
 async function run(name: string, mode: string, file: string | undefined): Promise<number> {
   if (name === "demo") return demo();
-  if (name === "eval") return mode === "live" ? live() : replay();
+  if (name === "eval") {
+    if (mode === "live") return live();
+    if (mode === "local") return localEval();
+    return replay();
+  }
   if (name === "trace") return file ? showTrace(file) : usage();
   return usage();
 }
@@ -141,6 +159,63 @@ async function live(): Promise<number> {
   }
 }
 
+async function localEval(): Promise<number> {
+  const tools = values.tools ?? "recorded";
+  if (tools !== "recorded" && tools !== "live") {
+    process.stderr.write("--tools must be recorded or live.\n");
+    return 1;
+  }
+  const model = process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL;
+  const baseUrl = process.env.OLLAMA_BASE_URL || DEFAULT_OLLAMA_BASE_URL;
+  const timeout = Number(process.env.OLLAMA_TIMEOUT_MS ?? DEFAULT_OLLAMA_TIMEOUT_MS);
+  const provider = createOllamaProvider({
+    baseUrl,
+    timeoutMs: Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_OLLAMA_TIMEOUT_MS,
+  });
+  const slug = resultFileSlug(model);
+  const partialPath = path.join("evals", "results", `live-${slug}.partial.json`);
+  const summaryPath = path.join("evals", "results", `live-${slug}.summary.json`);
+  const companiesKey = process.env.COMPANIES_HOUSE_API_KEY;
+  const companies =
+    tools === "live" && companiesKey
+      ? createCompaniesHouseClient({ apiKey: companiesKey })
+      : undefined;
+  const police = tools === "live" ? createPoliceClient() : undefined;
+  if (tools === "live" && !companies) {
+    process.stderr.write(
+      "Companies House calls use recorded fixtures because COMPANIES_HOUSE_API_KEY is not set. Police UK calls use the live API.\n",
+    );
+  }
+  const tracing = createTracing({
+    otlpEndpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    secrets: companiesKey && companiesKey.length >= 8 ? [companiesKey] : [],
+  });
+  try {
+    const summary = await runLocalEval({
+      tasks: loadGoldenTasks(),
+      provider,
+      model,
+      tracer: tracing.tracer,
+      mode: tools === "live" ? "live-full" : "live-recorded-tools",
+      fresh: values.fresh === true,
+      partialPath,
+      summaryPath,
+      catalogFor: (task) =>
+        tools === "recorded" ? replayCatalog(task) : liveToolCatalog({ task, police, companies }),
+    });
+    process.stdout.write(
+      `${summary.complete ? "Complete" : "Incomplete"} ${summary.model}: ${summary.passed}/${summary.taskCount} passed, tool accuracy ${summary.toolCallAccuracy}, groundedness ${summary.groundedness}, judge ${summary.meanJudgeScore}, mean latency ${summary.meanLatencyMs} ms, cost $${summary.totalEstimatedCostUsd}.\n`,
+    );
+    process.stdout.write(`Wrote ${summaryPath}\n`);
+    return summary.complete && summary.passed === summary.taskCount ? 0 : 1;
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : "Local eval failed."}\n`);
+    return 1;
+  } finally {
+    await tracing.provider.shutdown();
+  }
+}
+
 async function showTrace(file: string): Promise<number> {
   const parsed = JSON.parse(await readFile(file, "utf8")) as { spans?: TraceSpan[] };
   if (!parsed.spans) {
@@ -153,7 +228,7 @@ async function showTrace(file: string): Promise<number> {
 
 function usage(): number {
   process.stderr.write(
-    "Usage: uk-research demo | uk-research eval --mode replay|live | uk-research trace <file>\n",
+    "Usage: uk-research demo | uk-research eval --mode replay|live|local [--fresh] [--tools recorded|live] | uk-research trace <file>\n",
   );
   return 1;
 }

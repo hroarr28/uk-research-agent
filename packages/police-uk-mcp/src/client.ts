@@ -1,8 +1,14 @@
-import { toolError, toolOk, type ToolResult } from "@uk-research/contract";
+import { toolError, toolJson, toolOk, type ToolResult } from "@uk-research/contract";
 import { createHttpClient, type FetchLike, type HttpResult, type Logger } from "@uk-research/http";
 import { z } from "zod";
 import { summariseCrimes, type StreetCrimeSummary } from "./aggregate.js";
-import type { ListCrimeCategoriesArgs, SummariseStreetCrimeArgs } from "./schemas.js";
+import {
+  explainInvalidPoliceArgs,
+  listCrimeCategoriesSchema,
+  summariseStreetCrimeSchema,
+  type ListCrimeCategoriesArgs,
+  type SummariseStreetCrimeArgs,
+} from "./schemas.js";
 
 export const POLICE_UK_BASE_URL = "https://data.police.uk/api";
 
@@ -93,4 +99,21 @@ export function createPoliceClient(options: PoliceClientOptions = {}): PoliceCli
       return toolOk({ date: parsed.data.date });
     },
   };
+}
+
+export async function callPoliceTool(
+  client: PoliceClient,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<string> {
+  const issue = explainInvalidPoliceArgs(name, args);
+  if (issue) return toolJson(toolError("invalid_input", issue));
+  if (name === "list_police_forces") return toolJson(await client.listForces());
+  if (name === "list_crime_categories") {
+    return toolJson(await client.listCrimeCategories(listCrimeCategoriesSchema.parse(args)));
+  }
+  if (name === "summarise_street_crime") {
+    return toolJson(await client.summariseStreetCrime(summariseStreetCrimeSchema.parse(args)));
+  }
+  return toolJson(toolError("unknown_tool", `No tool named ${name}.`));
 }

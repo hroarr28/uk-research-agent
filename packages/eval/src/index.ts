@@ -1,6 +1,16 @@
 export { loadGoldenTasks } from "./golden/tasks.js";
 export type { GoldenTask } from "./golden/types.js";
 export { judgeAnswer, judgeSchema, parseJudgeOutput } from "./judge.js";
+export {
+  hardwareInfo,
+  liveToolCatalog,
+  resultFileSlug,
+  runLocalEval,
+  type HardwareInfo,
+  type LocalEvalMode,
+  type LocalSummary,
+} from "./local-eval.js";
+export { LOCAL_JUDGE_NOTE } from "./local-judge.js";
 export { liveSmokeTasks, runLiveTasks, scoreLiveRun, type LiveTask } from "./live.js";
 export {
   replayCatalog,

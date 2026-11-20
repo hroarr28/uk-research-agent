@@ -32,6 +32,11 @@ export type CompletionResponse = {
 
 export interface ModelProvider {
   readonly id: string;
+  /**
+   * Local runtimes set this. Their token cost is recorded as $0.
+   * Tokens and latency are still reported.
+   */
+  readonly local?: boolean;
   complete(request: CompletionRequest): Promise<CompletionResponse>;
 }
 

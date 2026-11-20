@@ -19,6 +19,7 @@
     "demo": "npm run build && node packages/cli/dist/main.js demo",
     "eval:replay": "npm run build && node packages/cli/dist/main.js eval --mode replay",
     "eval:live": "npm run build && node packages/cli/dist/main.js eval --mode live",
+    "eval:local": "npm run build && node packages/cli/dist/main.js eval --mode local",
     "trace": "node packages/cli/dist/main.js trace",
     "record:police": "npm run build && node packages/police-uk-mcp/dist/record.js"
   },

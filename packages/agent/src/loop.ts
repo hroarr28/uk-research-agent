@@ -29,7 +29,9 @@ export type RunAgentInput = {
 };
 
 type StepOutcome =
-  { type: "model_error"; message: string } | { type: "final"; text: string } | { type: "continue" };
+  | { type: "model_error"; message: string }
+  | { type: "final"; text: string }
+  | { type: "continue"; schemaRejected: boolean; detail: string };
 
 export async function runAgent(input: RunAgentInput): Promise<AgentResult> {
   const limits: AgentLimits = { ...DEFAULT_LIMITS, ...input.limits };
@@ -45,6 +47,7 @@ export async function runAgent(input: RunAgentInput): Promise<AgentResult> {
   let priceKnown = true;
   let steps = 0;
   let modelUsed: string | null = null;
+  let schemaStrikes = 0;
 
   return withSpan(
     input.tracer,
@@ -108,7 +111,11 @@ export async function runAgent(input: RunAgentInput): Promise<AgentResult> {
                 modelUsed = completion.model || input.model;
                 inputTokens += completion.usage.inputTokens;
                 outputTokens += completion.usage.outputTokens;
-                const cost = estimateCost(modelUsed, completion.usage);
+                const cost = estimateCost(
+                  modelUsed,
+                  completion.usage,
+                  input.provider.local === true,
+                );
                 estimatedCostUsd += cost.usd;
                 priceKnown = priceKnown && cost.priceKnown;
               },
@@ -117,6 +124,15 @@ export async function runAgent(input: RunAgentInput): Promise<AgentResult> {
         if (outcome.type === "model_error")
           return finish("model_error", `Stopped: model error. ${outcome.message}`);
         if (outcome.type === "final") return finish("completed", outcome.text);
+        if (outcome.schemaRejected) {
+          schemaStrikes += 1;
+          if (schemaStrikes > 1) {
+            return finish(
+              "model_error",
+              `Stopped: tool arguments failed schema validation after one retry. ${outcome.detail}`,
+            );
+          }
+        }
       }
     },
   );
@@ -146,7 +162,11 @@ async function runStep(args: {
           messages: args.messages,
           tools: args.input.tools.definitions(),
         });
-        const cost = estimateCost(value.model || args.input.model, value.usage);
+        const cost = estimateCost(
+          value.model || args.input.model,
+          value.usage,
+          args.input.provider.local === true,
+        );
         span.setAttribute("gen_ai.request.model", value.model || args.input.model);
         span.setAttribute("gen_ai.usage.input_tokens", value.usage.inputTokens);
         span.setAttribute("gen_ai.usage.output_tokens", value.usage.outputTokens);
@@ -172,6 +192,7 @@ async function runStep(args: {
   });
   if (completion.toolCalls.length === 0) return { type: "final", text: completion.content };
 
+  const stepOutputs: string[] = [];
   for (const call of completion.toolCalls) {
     const executed = await withSpan(
       args.input.tracer,
@@ -200,6 +221,7 @@ async function runStep(args: {
         return { text, ok };
       },
     );
+    stepOutputs.push(executed.text);
     args.toolCalls.push({
       name: call.name,
       arguments: call.arguments,
@@ -213,7 +235,21 @@ async function runStep(args: {
       content: executed.text,
     });
   }
-  return { type: "continue" };
+  const rejected = stepOutputs.filter(isInvalidInput);
+  return {
+    type: "continue",
+    schemaRejected: rejected.length > 0,
+    detail: rejected.join("\n").slice(0, 500),
+  };
+}
+
+function isInvalidInput(text: string): boolean {
+  try {
+    const parsed = JSON.parse(text) as { ok?: unknown; error?: { code?: unknown } };
+    return parsed.ok === false && parsed.error?.code === "invalid_input";
+  } catch {
+    return false;
+  }
 }
 
 function stopText(

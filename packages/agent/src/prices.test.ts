@@ -9,6 +9,15 @@ describe("estimateCost", () => {
     expect(roundCost(cost.usd)).toBe(0.00026);
   });
 
+  it("prices Gemma 4 local tags at zero", () => {
+    const cost = estimateCost("gemma4:31b", { inputTokens: 1_000_000, outputTokens: 1_000_000 });
+    expect(cost).toEqual({ usd: 0, priceKnown: true });
+    expect(estimateCost("gpt-5-mini", { inputTokens: 10, outputTokens: 10 }, true)).toEqual({
+      usd: 0,
+      priceKnown: true,
+    });
+  });
+
   it("overestimates an unknown model at the highest table rate", () => {
     const cost = estimateCost("unknown-model", { inputTokens: 1_000_000, outputTokens: 1_000_000 });
     expect(cost.priceKnown).toBe(false);

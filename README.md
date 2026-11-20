@@ -1,6 +1,6 @@
 # UK Public Research Agent
 
-A small tool-calling research agent over two public UK datasets. It is built to show the pieces a senior reviewer looks for in applied-AI work: typed tool contracts, a bounded agent loop, traces with cost, and an eval suite that CI can run with no network and no API keys.
+A small tool-calling research agent over two public UK datasets. The default model path is local and costs $0: Gemma 4 through Ollama, tag `gemma4:31b`. Paid OpenAI and Anthropic providers remain available, but nothing in CI calls them. The repo also has typed tool contracts, a bounded agent loop, traces, and an eval suite that runs offline with a fake model.
 
 The agent answers questions such as "Summarise this company's officers and recent filings" or "Compare street-level crime at two points". Every factual claim in a scored answer has to be present in a tool result.
 
@@ -18,6 +18,7 @@ The Police UK numbers in `evals/fixtures/police-recorded.json` were read from th
 flowchart LR
   cli[CLI]
   agent[Agent loop]
+  ollama[Ollama Gemma 4]
   openai[OpenAI provider]
   anthropic[Anthropic provider]
   replay[Replay fixtures]
@@ -32,6 +33,7 @@ flowchart LR
   eval[Eval harness]
 
   cli --> agent
+  agent --> ollama
   agent --> openai
   agent --> anthropic
   agent --> replay
@@ -50,7 +52,8 @@ Each MCP server is its own package and a stdio binary (`companies-house-mcp`, `p
 
 ## Design trade-offs
 
-- **Fetch adapters, not vendor SDKs.** OpenAI and Anthropic sit behind one `ModelProvider`. A few dozen lines of request mapping are easier to test than two large SDKs, and both still speak their real HTTP APIs.
+- **Fetch adapters, not vendor SDKs.** Ollama, OpenAI, and Anthropic sit behind one `ModelProvider`. Ollama uses its native `/api/chat` tool-calling API. `OLLAMA_BASE_URL` defaults to `http://127.0.0.1:11434` and `OLLAMA_MODEL` defaults to `gemma4:31b`. Gemma 4 is on the Ollama library (`gemma4:e2b`, `e4b`, `12b`, `26b`, `31b`). A malformed tool call is sent back once; a second malformed call fails the request. Arguments that fail the tool's zod schema are returned to the model once, and a second invalid call stops the run. Local token cost is $0. Tokens and latency are still recorded.
+- **The local judge is the same model.** It grades its own answer. That is weaker than a separate frontier judge, and a smaller Gemma tag is weaker still. Pass/fail still requires the judge score to be at least 4, so a weak judge can move the pass rate. The tool, fact, and number checks are the reliable signal.
 - **Deterministic checks decide pass or fail.** The harness checks tool name and arguments, that required facts appear in the answer and in the tool output, that forbidden claims are absent, and that numbers in the answer occur in the question or the tool output. The LLM-as-judge rubric is in `packages/eval/src/rubric.ts`. In replay, the judge score is the recorded JSON for that rubric, parsed by the same schema a live judge must satisfy. Replay therefore does not measure a live model. It fails if the loop drops a call, reorders a strict sequence, ignores a step or budget limit, or lets an ungrounded fact through.
 - **Crime is aggregated.** The street-level API returns one object per crime, including identifiers. The tool returns counts by category and a coverage note. Individual identifiers are not stored in the fixture or sent to the model.
 - **Filing descriptions stay as API enumeration keys** (`accounts-with-accounts-type-full`) plus `description_values`. Turning those keys into the prose on the Companies House website needs a second dataset this repo does not ship.
@@ -64,7 +67,7 @@ Each MCP server is its own package and a stdio binary (`companies-house-mcp`, `p
 | `packages/http`                       | Retries, `Retry-After`, backoff, request spacing, redaction |
 | `packages/companies-house-mcp`        | Companies House tools and stdio server                      |
 | `packages/police-uk-mcp`              | Police UK tools, aggregation, stdio server, `record` script |
-| `packages/agent`                      | Provider interface, agent loop, limits                      |
+| `packages/agent`                      | Provider interface, including Ollama, and the agent loop    |
 | `packages/tracing`                    | OpenTelemetry setup, JSON spans, text trace                 |
 | `packages/eval`                       | Rubric, scoring, 28 golden tasks, replay runner             |
 | `packages/cli`                        | `demo`, `eval`, `trace`                                     |
@@ -93,13 +96,27 @@ Estimated cost: $0.00078
 Other commands:
 
 ```bash
-npm run eval:replay          # writes evals/results and exits non-zero if a task fails
-npm run eval:live            # real model and real APIs; needs a provider key
+npm run eval:replay          # offline fixtures; CI runs this
+npm run eval:local           # real local Ollama, recorded tool responses
+npm run eval:live            # paid OpenAI or Anthropic, plus live APIs
 npm run trace -- runs/demo-trace.json
 npm run record:police        # refresh the Police UK snapshot from the public API
 ```
 
-Live mode uses `RESEARCH_PROVIDER=openai|anthropic` and `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. Optional `RESEARCH_MODEL` overrides the default (`gpt-5-mini` or `claude-sonnet-4-5`). Companies House live tasks are skipped, with a message, when `COMPANIES_HOUSE_API_KEY` is unset. Police UK live tasks do not need a key. Copy `.env.example` and export the variables yourself. The process does not read a dotenv file.
+`npm run eval:local` is the zero-cost path. It runs all 28 golden tasks against Ollama and writes `evals/results/live-<model-tag>.summary.json` (for the default tag, `evals/results/live-gemma4-31b.summary.json`). Tool responses come from the fixtures, so Companies House does not need a key. Each finished task is appended to `evals/results/live-<model-tag>.partial.json`. Stop the process and run the same command again to continue; finished tasks are not repeated. `npm run eval:local -- --fresh` deletes that progress by starting over. `npm run eval:local -- --tools live` calls the live Police UK API for police tools. Companies House stays on fixtures unless `COMPANIES_HOUSE_API_KEY` is set.
+
+On a Mac that already has Ollama 0.20.0 serving `gemma4:31b`:
+
+```bash
+npm install
+export OLLAMA_BASE_URL=http://127.0.0.1:11434
+export OLLAMA_MODEL=gemma4:31b
+npm run eval:local
+```
+
+The summary records the model tag, a hardware description from `os` and `process` (CPU model, architecture, memory, Node version), the date, pass rate, tool-call accuracy, groundedness, judge score, tokens, latency, and $0 cost. The pass rule is the same as replay: exact tool arguments, grounded facts, and a judge score of at least 4. Three control tasks keep their tight limits. The cost-budget task cannot trip while the price is $0. The step-limit and token-budget tasks still stop early. Those failures are properties of the task, not of Gemma.
+
+`npm run eval:live` uses `RESEARCH_PROVIDER=openai|anthropic` and `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. Optional `RESEARCH_MODEL` overrides the default (`gpt-5-mini` or `claude-sonnet-4-5`). Companies House live tasks are skipped, with a message, when `COMPANIES_HOUSE_API_KEY` is unset. Police UK live tasks do not need a key. Copy `.env.example` and export the variables yourself. The process does not read a dotenv file. CI does not run `eval:local` or `eval:live`.
 
 Stdio servers, for an MCP host:
 
@@ -129,6 +146,13 @@ Replay mode, from `npm run eval:replay` in this workspace. These numbers are com
 
 The same command printed `Mean latency: 0.357 ms on this machine.` That latency is not in `evals/results/replay.summary.json` or `replay.md`, and CI does not compare it. The mean judge score is 5 because every recorded judge output scores the scripted answer as fully supported. That is the replay contract, not an estimate of a live model's quality.
 
+| Run                                | Result            |
+| ---------------------------------- | ----------------- |
+| Replay, fake model, recorded tools | The table above   |
+| Live local, `gemma4:31b` on Ollama | Pending local run |
+
+No live-local numbers are checked in. Run `npm run eval:local` on the machine that has the model, then read `evals/results/live-gemma4-31b.summary.json`. Per-task `failures` are the failure-mode list: missed or mistyped tool arguments, facts that were not copied from the fixture, a judge score under 4, and the three limit tasks described above.
+
 CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, build, and `npm run eval:replay`, then `git diff --exit-code` on the two committed result files. Tests replace `fetch` and throw if a case reaches the network.
 
 ## Limits and next steps
@@ -139,4 +163,5 @@ CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, build, and `npm run 
 - The agent stops at a step limit, a token budget, or a cost budget and returns the tool results it already has. It does not plan a multi-session investigation or keep memory.
 - Officer pages and filing history are capped at 10 items and report `truncated` when the register has more.
 - The UK bounding box used by the crime tool is latitude 49 to 61 and longitude -8.7 to 1.9. Points outside that box are rejected before the HTTP call.
-- Price rows will go stale when vendors change list prices. Update `packages/agent/src/prices.ts`; the budget uses that table only.
+- Price rows for the paid models will go stale when vendors change list prices. Update `packages/agent/src/prices.ts`. Gemma 4 tags and any provider marked local are priced at $0; a positive cost budget therefore does not stop a local run.
+- Ollama is not installed or pulled by this repo. `npm run eval:local` fails fast, and keeps finished tasks, if nothing is listening at `OLLAMA_BASE_URL`. One request is not retried; the default timeout is 300 seconds (`OLLAMA_TIMEOUT_MS`).

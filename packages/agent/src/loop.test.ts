@@ -166,6 +166,67 @@ describe("runAgent", () => {
     expect(root?.attributes["agent.status"]).toBe("model_error");
     expect(root?.status).toBe("error");
   });
+
+  it("feeds one invalid tool call back, then stops if the next call is also invalid", async () => {
+    const invalid = '{"ok":false,"error":{"code":"invalid_input","message":"query: too short"}}';
+    const recovered = await run({
+      tools: catalog(() => invalid),
+      responses: [
+        response({
+          content: "",
+          toolCalls: [{ id: "c1", name: "search_companies", arguments: { query: "x" } }],
+        }),
+        response({ content: "The query was rejected.", toolCalls: [] }),
+      ],
+    });
+    expect(recovered.result.status).toBe("completed");
+    expect(recovered.provider.requests).toHaveLength(2);
+
+    const stuck = await run({
+      tools: catalog(() => invalid),
+      responses: [
+        response({
+          content: "",
+          toolCalls: [{ id: "c1", name: "search_companies", arguments: { query: "x" } }],
+        }),
+        response({
+          content: "",
+          toolCalls: [{ id: "c2", name: "search_companies", arguments: { query: "y" } }],
+        }),
+        response({ content: "should not be asked", toolCalls: [] }),
+      ],
+    });
+    expect(stuck.result.status).toBe("model_error");
+    expect(stuck.result.answer).toContain("schema validation after one retry");
+    expect(stuck.provider.requests).toHaveLength(2);
+  });
+
+  it("records a local model at zero dollars while keeping the token counts", async () => {
+    const tracing = createTracing();
+    const result = await runAgent({
+      question: "Hi",
+      provider: {
+        id: "ollama",
+        local: true,
+        async complete() {
+          return {
+            content: "Hello",
+            toolCalls: [],
+            usage: { inputTokens: 1000, outputTokens: 50 },
+            model: "gemma4:31b",
+          };
+        },
+      },
+      tools: catalog(() => "{}"),
+      tracer: tracing.tracer,
+      model: "gemma4:31b",
+    });
+    await tracing.provider.shutdown();
+    expect(result.usage.estimatedCostUsd).toBe(0);
+    expect(result.usage.priceKnown).toBe(true);
+    expect(result.usage.inputTokens).toBe(1000);
+    expect(result.usage.outputTokens).toBe(50);
+  });
 });
 
 describe("boundToolOutput", () => {
