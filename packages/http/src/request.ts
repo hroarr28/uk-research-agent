@@ -33,7 +33,7 @@ export type HttpClient = {
   ): Promise<HttpResult<unknown>>;
 };
 
-const DEFAULT_USER_AGENT = "uk-public-research-agent/0.1";
+const DEFAULT_USER_AGENT = "uk-research-agent/0.1";
 
 export function retryAfterMs(
   header: string | null,

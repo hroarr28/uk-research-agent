@@ -1,8 +1,24 @@
-# UK Public Research Agent
+# uk-research-agent
 
-A small tool-calling research agent over two public UK datasets. The default model path is local and costs $0: Gemma 4 through Ollama, tag `gemma4:31b`. Paid OpenAI and Anthropic providers remain available, but nothing in CI calls them. The repo also has typed tool contracts, a bounded agent loop, traces, and an eval suite that runs offline with a fake model.
+A tool-calling research agent over public UK data. It is a portfolio project: two MCP servers, one agent loop, OpenTelemetry tracing, and a record/replay eval harness. The default model path is local and costs $0: Gemma 4 through Ollama, tag `gemma4:31b`. OpenAI and Anthropic providers exist, and CI never calls them.
 
-The agent answers questions such as "Summarise this company's officers and recent filings" or "Compare street-level crime at two points". Every factual claim in a scored answer has to be present in a tool result.
+The agent answers questions such as "Summarise this company's officers and recent filings" or "Compare street-level crime at two points". A scored answer has to take its facts from tool results.
+
+## What is in the box
+
+- **Companies House MCP server** (`packages/companies-house-mcp`). Search, profile, officers, and filing history against the public REST API. The API key comes from `COMPANIES_HOUSE_API_KEY`. Officer home addresses and dates of birth are dropped before the model or a trace sees them.
+- **Police.uk MCP server** (`packages/police-uk-mcp`). Forces, crime categories, and street-level counts from `data.police.uk`. No API key. Counts are aggregated; individual crime identifiers are not stored.
+- **Agent** (`packages/agent`). A tool-calling loop with a step limit, a token budget, and a cost budget. Ollama, OpenAI, and Anthropic sit behind one provider interface.
+- **OpenTelemetry tracing** (`packages/tracing`). One span per run, step, model call, and tool call, with tokens, latency, and a cost estimate. The default export is JSON. An OTLP endpoint is optional.
+- **Record/replay eval harness** (`packages/eval`). Twenty-eight golden tasks. Replay uses recorded tool responses and recorded model responses, so CI does not use the network. `npm run eval:local` is the live-model path: a real local model, with those same tool fixtures.
+
+## Status
+
+Checked in this repository on 2026-11-20:
+
+- `npm test`: 59 tests passed.
+- `npm run eval:replay`: 28 of 28 offline tasks passed. Those figures are in the table below. They are not a live model run.
+- Live Gemma 4 (`npm run eval:local` with `gemma4:31b`): not run yet. There is no live score in this repo.
 
 ## Why these two sources
 
@@ -74,16 +90,28 @@ Each MCP server is its own package and a stdio binary (`companies-house-mcp`, `p
 | `evals/fixtures/police-recorded.json` | Recorded Police UK snapshot                                 |
 | `evals/results/`                      | Committed replay summary. Latency is not stored             |
 
-## Run it
+## Install and run
 
 Node 22 or newer.
 
 ```bash
 npm install
-npm run demo
 npm test
 npm run eval:replay
 ```
+
+`npm test` and `npm run eval:replay` stay offline. `npm run demo` replays one scripted question and writes `runs/demo-trace.json`.
+
+To run the 28-task eval against a local Ollama server and `gemma4:31b`:
+
+```bash
+ollama pull gemma4:31b
+export OLLAMA_BASE_URL=http://127.0.0.1:11434
+export OLLAMA_MODEL=gemma4:31b
+npm run eval:local
+```
+
+Ollama has to be running before that command. This repo does not install Ollama or download the model. The command writes `evals/results/live-gemma4-31b.summary.json` and, after each task, `evals/results/live-gemma4-31b.partial.json`. Run the same command again to continue a stopped run. `npm run eval:local -- --fresh` starts over.
 
 `npm run demo` is offline. It replays "Summarise NORTHSTAR ANALYTICS LTD's officers and recent filings", prints the answer and a trace, and writes `runs/demo-trace.json`.
 
@@ -103,18 +131,9 @@ npm run trace -- runs/demo-trace.json
 npm run record:police        # refresh the Police UK snapshot from the public API
 ```
 
-`npm run eval:local` is the zero-cost path. It runs all 28 golden tasks against Ollama and writes `evals/results/live-<model-tag>.summary.json` (for the default tag, `evals/results/live-gemma4-31b.summary.json`). Tool responses come from the fixtures, so Companies House does not need a key. Each finished task is appended to `evals/results/live-<model-tag>.partial.json`. Stop the process and run the same command again to continue; finished tasks are not repeated. `npm run eval:local -- --fresh` deletes that progress by starting over. `npm run eval:local -- --tools live` calls the live Police UK API for police tools. Companies House stays on fixtures unless `COMPANIES_HOUSE_API_KEY` is set.
+`npm run eval:local` uses recorded tool responses, so Companies House does not need a key. `npm run eval:local -- --tools live` calls the live Police.uk API for police tools. Companies House stays on fixtures unless `COMPANIES_HOUSE_API_KEY` is set.
 
-On a Mac that already has Ollama 0.20.0 serving `gemma4:31b`:
-
-```bash
-npm install
-export OLLAMA_BASE_URL=http://127.0.0.1:11434
-export OLLAMA_MODEL=gemma4:31b
-npm run eval:local
-```
-
-The summary records the model tag, a hardware description from `os` and `process` (CPU model, architecture, memory, Node version), the date, pass rate, tool-call accuracy, groundedness, judge score, tokens, latency, and $0 cost. The pass rule is the same as replay: exact tool arguments, grounded facts, and a judge score of at least 4. Three control tasks keep their tight limits. The cost-budget task cannot trip while the price is $0. The step-limit and token-budget tasks still stop early. Those failures are properties of the task, not of Gemma.
+The summary file records the model tag, a hardware description from `os` and `process` (CPU model, architecture, memory, Node version), the date, pass rate, tool-call accuracy, groundedness, judge score, tokens, latency, and cost. Local cost is $0. The pass rule matches replay: exact tool arguments, grounded facts, and a judge score of at least 4. The judge is the same local model, so that score is weaker than a separate frontier judge. No live result is included here, because that command has not been run in this repository.
 
 `npm run eval:live` uses `RESEARCH_PROVIDER=openai|anthropic` and `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. Optional `RESEARCH_MODEL` overrides the default (`gpt-5-mini` or `claude-sonnet-4-5`). Companies House live tasks are skipped, with a message, when `COMPANIES_HOUSE_API_KEY` is unset. Police UK live tasks do not need a key. Copy `.env.example` and export the variables yourself. The process does not read a dotenv file. CI does not run `eval:local` or `eval:live`.
 
