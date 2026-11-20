@@ -1,0 +1,25 @@
+{
+  "name": "@uk-research/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "uk-research": "./dist/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@uk-research/agent": "*",
+    "@uk-research/companies-house-mcp": "*",
+    "@uk-research/contract": "*",
+    "@uk-research/eval": "*",
+    "@uk-research/http": "*",
+    "@uk-research/police-uk-mcp": "*",
+    "@uk-research/tracing": "*"
+  }
+}

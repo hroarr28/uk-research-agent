@@ -1,0 +1,20 @@
+{
+  "name": "@uk-research/eval",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.10.0",
+    "@uk-research/agent": "*",
+    "@uk-research/companies-house-mcp": "*",
+    "@uk-research/contract": "*",
+    "@uk-research/police-uk-mcp": "*",
+    "zod": "^3.25.76"
+  }
+}

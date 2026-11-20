@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/contract" },
+    { "path": "packages/http" },
+    { "path": "packages/tracing" },
+    { "path": "packages/companies-house-mcp" },
+    { "path": "packages/police-uk-mcp" },
+    { "path": "packages/agent" },
+    { "path": "packages/eval" },
+    { "path": "packages/cli" }
+  ]
+}

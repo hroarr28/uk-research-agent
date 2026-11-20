@@ -1,0 +1,491 @@
+{
+  "source": "https://data.police.uk/api",
+  "retrievedAt": "2026-11-20",
+  "crimeLastUpdated": "2026-09-01",
+  "note": "Aggregated from the public street-level crime API. Individual crime identifiers are not stored. Companies House fixtures elsewhere in the eval suite are synthetic.",
+  "locations": {
+    "leicester": {
+      "label": "Leicester city centre",
+      "lat": 52.6369,
+      "lng": -1.1398
+    },
+    "nottingham": {
+      "label": "Nottingham city centre",
+      "lat": 52.9548,
+      "lng": -1.1581
+    },
+    "shetland": {
+      "label": "Shetland",
+      "lat": 60.15,
+      "lng": -1.15
+    }
+  },
+  "forces": [
+    {
+      "id": "avon-and-somerset",
+      "name": "Avon and Somerset Constabulary"
+    },
+    {
+      "id": "bedfordshire",
+      "name": "Bedfordshire Police"
+    },
+    {
+      "id": "cambridgeshire",
+      "name": "Cambridgeshire Constabulary"
+    },
+    {
+      "id": "cheshire",
+      "name": "Cheshire Constabulary"
+    },
+    {
+      "id": "city-of-london",
+      "name": "City of London Police"
+    },
+    {
+      "id": "cleveland",
+      "name": "Cleveland Police"
+    },
+    {
+      "id": "cumbria",
+      "name": "Cumbria Constabulary"
+    },
+    {
+      "id": "derbyshire",
+      "name": "Derbyshire Constabulary"
+    },
+    {
+      "id": "devon-and-cornwall",
+      "name": "Devon & Cornwall Police"
+    },
+    {
+      "id": "dorset",
+      "name": "Dorset Police"
+    },
+    {
+      "id": "durham",
+      "name": "Durham Constabulary"
+    },
+    {
+      "id": "dyfed-powys",
+      "name": "Dyfed-Powys Police"
+    },
+    {
+      "id": "essex",
+      "name": "Essex Police"
+    },
+    {
+      "id": "gloucestershire",
+      "name": "Gloucestershire Constabulary"
+    },
+    {
+      "id": "greater-manchester",
+      "name": "Greater Manchester Police"
+    },
+    {
+      "id": "gwent",
+      "name": "Gwent Police"
+    },
+    {
+      "id": "hampshire",
+      "name": "Hampshire Constabulary"
+    },
+    {
+      "id": "hertfordshire",
+      "name": "Hertfordshire Constabulary"
+    },
+    {
+      "id": "humberside",
+      "name": "Humberside Police"
+    },
+    {
+      "id": "kent",
+      "name": "Kent Police"
+    },
+    {
+      "id": "lancashire",
+      "name": "Lancashire Constabulary"
+    },
+    {
+      "id": "leicestershire",
+      "name": "Leicestershire Police"
+    },
+    {
+      "id": "lincolnshire",
+      "name": "Lincolnshire Police"
+    },
+    {
+      "id": "merseyside",
+      "name": "Merseyside Police"
+    },
+    {
+      "id": "metropolitan",
+      "name": "Metropolitan Police Service"
+    },
+    {
+      "id": "norfolk",
+      "name": "Norfolk Constabulary"
+    },
+    {
+      "id": "north-wales",
+      "name": "North Wales Police"
+    },
+    {
+      "id": "north-yorkshire",
+      "name": "North Yorkshire Police"
+    },
+    {
+      "id": "northamptonshire",
+      "name": "Northamptonshire Police"
+    },
+    {
+      "id": "northumbria",
+      "name": "Northumbria Police"
+    },
+    {
+      "id": "nottinghamshire",
+      "name": "Nottinghamshire Police"
+    },
+    {
+      "id": "northern-ireland",
+      "name": "Police Service of Northern Ireland"
+    },
+    {
+      "id": "south-wales",
+      "name": "South Wales Police"
+    },
+    {
+      "id": "south-yorkshire",
+      "name": "South Yorkshire Police"
+    },
+    {
+      "id": "staffordshire",
+      "name": "Staffordshire Police"
+    },
+    {
+      "id": "suffolk",
+      "name": "Suffolk Constabulary"
+    },
+    {
+      "id": "surrey",
+      "name": "Surrey Police"
+    },
+    {
+      "id": "sussex",
+      "name": "Sussex Police"
+    },
+    {
+      "id": "thames-valley",
+      "name": "Thames Valley Police"
+    },
+    {
+      "id": "warwickshire",
+      "name": "Warwickshire Police"
+    },
+    {
+      "id": "west-mercia",
+      "name": "West Mercia Police"
+    },
+    {
+      "id": "west-midlands",
+      "name": "West Midlands Police"
+    },
+    {
+      "id": "west-yorkshire",
+      "name": "West Yorkshire Police"
+    },
+    {
+      "id": "wiltshire",
+      "name": "Wiltshire Police"
+    }
+  ],
+  "categories": [
+    {
+      "code": "all-crime",
+      "name": "All crime"
+    },
+    {
+      "code": "anti-social-behaviour",
+      "name": "Anti-social behaviour"
+    },
+    {
+      "code": "bicycle-theft",
+      "name": "Bicycle theft"
+    },
+    {
+      "code": "burglary",
+      "name": "Burglary"
+    },
+    {
+      "code": "criminal-damage-arson",
+      "name": "Criminal damage and arson"
+    },
+    {
+      "code": "drugs",
+      "name": "Drugs"
+    },
+    {
+      "code": "other-crime",
+      "name": "Other crime"
+    },
+    {
+      "code": "other-theft",
+      "name": "Other theft"
+    },
+    {
+      "code": "possession-of-weapons",
+      "name": "Possession of weapons"
+    },
+    {
+      "code": "public-order",
+      "name": "Public order"
+    },
+    {
+      "code": "robbery",
+      "name": "Robbery"
+    },
+    {
+      "code": "shoplifting",
+      "name": "Shoplifting"
+    },
+    {
+      "code": "theft-from-the-person",
+      "name": "Theft from the person"
+    },
+    {
+      "code": "vehicle-crime",
+      "name": "Vehicle crime"
+    },
+    {
+      "code": "violent-crime",
+      "name": "Violence and sexual offences"
+    }
+  ],
+  "summaries": {
+    "leicester-2026-08": {
+      "lat": 52.6369,
+      "lng": -1.1398,
+      "date": "2026-08",
+      "category": "all-crime",
+      "total": 1676,
+      "byCategory": [
+        {
+          "category": "violent-crime",
+          "count": 514
+        },
+        {
+          "category": "shoplifting",
+          "count": 219
+        },
+        {
+          "category": "anti-social-behaviour",
+          "count": 205
+        },
+        {
+          "category": "public-order",
+          "count": 161
+        },
+        {
+          "category": "criminal-damage-arson",
+          "count": 123
+        },
+        {
+          "category": "other-theft",
+          "count": 105
+        },
+        {
+          "category": "drugs",
+          "count": 100
+        },
+        {
+          "category": "vehicle-crime",
+          "count": 71
+        },
+        {
+          "category": "bicycle-theft",
+          "count": 42
+        },
+        {
+          "category": "burglary",
+          "count": 42
+        },
+        {
+          "category": "robbery",
+          "count": 35
+        },
+        {
+          "category": "theft-from-the-person",
+          "count": 23
+        },
+        {
+          "category": "possession-of-weapons",
+          "count": 19
+        },
+        {
+          "category": "other-crime",
+          "count": 17
+        }
+      ],
+      "coverageNote": "Counts are anonymised street-level crimes within about one mile of the point, not exact locations. data.police.uk does not include territorial-force crime in Scotland, only British Transport Police, so Scottish figures are not comparable with England and Wales.",
+      "source": "https://data.police.uk/docs/method/crime-street/"
+    },
+    "leicester-2026-07": {
+      "lat": 52.6369,
+      "lng": -1.1398,
+      "date": "2026-07",
+      "category": "all-crime",
+      "total": 1639,
+      "byCategory": [
+        {
+          "category": "violent-crime",
+          "count": 487
+        },
+        {
+          "category": "shoplifting",
+          "count": 221
+        },
+        {
+          "category": "public-order",
+          "count": 211
+        },
+        {
+          "category": "anti-social-behaviour",
+          "count": 202
+        },
+        {
+          "category": "criminal-damage-arson",
+          "count": 111
+        },
+        {
+          "category": "other-theft",
+          "count": 103
+        },
+        {
+          "category": "drugs",
+          "count": 75
+        },
+        {
+          "category": "vehicle-crime",
+          "count": 59
+        },
+        {
+          "category": "burglary",
+          "count": 52
+        },
+        {
+          "category": "robbery",
+          "count": 31
+        },
+        {
+          "category": "possession-of-weapons",
+          "count": 24
+        },
+        {
+          "category": "theft-from-the-person",
+          "count": 23
+        },
+        {
+          "category": "bicycle-theft",
+          "count": 22
+        },
+        {
+          "category": "other-crime",
+          "count": 18
+        }
+      ],
+      "coverageNote": "Counts are anonymised street-level crimes within about one mile of the point, not exact locations. data.police.uk does not include territorial-force crime in Scotland, only British Transport Police, so Scottish figures are not comparable with England and Wales.",
+      "source": "https://data.police.uk/docs/method/crime-street/"
+    },
+    "nottingham-2026-08": {
+      "lat": 52.9548,
+      "lng": -1.1581,
+      "date": "2026-08",
+      "category": "all-crime",
+      "total": 1582,
+      "byCategory": [
+        {
+          "category": "violent-crime",
+          "count": 463
+        },
+        {
+          "category": "anti-social-behaviour",
+          "count": 251
+        },
+        {
+          "category": "shoplifting",
+          "count": 233
+        },
+        {
+          "category": "public-order",
+          "count": 119
+        },
+        {
+          "category": "other-theft",
+          "count": 103
+        },
+        {
+          "category": "criminal-damage-arson",
+          "count": 73
+        },
+        {
+          "category": "drugs",
+          "count": 73
+        },
+        {
+          "category": "vehicle-crime",
+          "count": 67
+        },
+        {
+          "category": "robbery",
+          "count": 60
+        },
+        {
+          "category": "burglary",
+          "count": 59
+        },
+        {
+          "category": "theft-from-the-person",
+          "count": 33
+        },
+        {
+          "category": "other-crime",
+          "count": 20
+        },
+        {
+          "category": "bicycle-theft",
+          "count": 17
+        },
+        {
+          "category": "possession-of-weapons",
+          "count": 11
+        }
+      ],
+      "coverageNote": "Counts are anonymised street-level crimes within about one mile of the point, not exact locations. data.police.uk does not include territorial-force crime in Scotland, only British Transport Police, so Scottish figures are not comparable with England and Wales.",
+      "source": "https://data.police.uk/docs/method/crime-street/"
+    },
+    "shetland-2026-08": {
+      "lat": 60.15,
+      "lng": -1.15,
+      "date": "2026-08",
+      "category": "all-crime",
+      "total": 0,
+      "byCategory": [],
+      "coverageNote": "Counts are anonymised street-level crimes within about one mile of the point, not exact locations. data.police.uk does not include territorial-force crime in Scotland, only British Transport Police, so Scottish figures are not comparable with England and Wales.",
+      "source": "https://data.police.uk/docs/method/crime-street/"
+    },
+    "leicester-2026-08-burglary": {
+      "lat": 52.6369,
+      "lng": -1.1398,
+      "date": "2026-08",
+      "category": "burglary",
+      "total": 42,
+      "byCategory": [
+        {
+          "category": "burglary",
+          "count": 42
+        }
+      ],
+      "coverageNote": "Counts are anonymised street-level crimes within about one mile of the point, not exact locations. data.police.uk does not include territorial-force crime in Scotland, only British Transport Police, so Scottish figures are not comparable with England and Wales.",
+      "source": "https://data.police.uk/docs/method/crime-street/"
+    }
+  }
+}

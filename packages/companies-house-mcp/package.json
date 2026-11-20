@@ -1,0 +1,21 @@
+{
+  "name": "@uk-research/companies-house-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "companies-house-mcp": "./dist/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@uk-research/contract": "*",
+    "@uk-research/http": "*",
+    "zod": "^3.25.76"
+  }
+}

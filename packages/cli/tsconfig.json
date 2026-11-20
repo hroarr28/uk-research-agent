@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"],
+  "references": [
+    { "path": "../agent" },
+    { "path": "../eval" },
+    { "path": "../tracing" },
+    { "path": "../http" },
+    { "path": "../contract" },
+    { "path": "../companies-house-mcp" },
+    { "path": "../police-uk-mcp" }
+  ]
+}
