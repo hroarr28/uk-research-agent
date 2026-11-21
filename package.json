@@ -1,6 +1,7 @@
 {
   "name": "uk-research-agent",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Tool-calling research agent over Companies House and Police UK, with MCP servers, tracing, and an offline eval harness.",
